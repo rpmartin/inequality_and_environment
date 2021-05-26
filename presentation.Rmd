@@ -1,0 +1,268 @@
+---
+title: "Inequity and the Environment"
+author: "Richard Martin"
+date: "07/05/2021"
+output:
+  slidy_presentation:
+    keep_md: true
+bibliography: references.bib
+csl: apa.csl
+css: style.css
+---
+
+```{r setup, include=FALSE}
+load("RData_files/analysis.RData")
+#source("analysis.R")
+library(kableExtra)
+library(tidyverse)
+library(huxtable)
+library(car)
+library(GGally)
+library(plotly)
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Environmental problems we write about:
+
+* As a species we face many environmental challenges...
+* Recently climate change has been getting most of our attention:
+
+![Google Ngram Viewer](images/ngram.png)
+<figcaption>source: Google Ngram Viewer</figcaption>
+
+## Planetary boundaries:
+
+![Stockholm Resilience Centre](images/pb.png){ height=50% }
+<figcaption>source: @steffen2015planetary </figcaption>
+
+* We are in the midst of the world's 6th extinction crisis: @pimm1995future, @lawton1995extinction, @de2015estimating, @pimm2014biodiversity, @diaz2019global.
+
+* 8 billion mouths to feed has created great stress on nitrogen and phosphorus cycles.
+
+* What is needed is a measure of how well we are doing at addressing this multifaceted problem.
+
+## Environmental Performance Index:
+
+* Environmental Performance Index (EPI) is a data-driven summary of the state of sustainability based on 32 performance indicators across 11 issue categories.
+
+![](images/gdp_epi.png){ height=35% }
+<figcaption>source: @epi20</figcaption>
+
+* Strong correlation between EPI scores and GDP/capita. Is it because:
+
+    - economic prosperity makes it possible for nations to invest in policies and programs that lead to desirable outcomes  OR
+    
+    - economic prosperity allows rich countries to outsource the production of environmentally damaging goods. 
+
+*  Trade data and standard EPI scores can be used to create a weighted EPI score that crudely addresses these leakages.
+
+    - the relationship between gdp/capita and epi scores still exists using this weighted EPI score.
+
+## How the sausage is made:
+
+```{r, warning=FALSE,fig.height=9,fig.width=16}
+yearly_indicator_diff
+```
+
+
+## Confounds: wealth and governance.
+
+```{r, warning=FALSE,fig.height=9,fig.width=16}
+controls_pairs
+```
+
+## What I am interested in: inequity
+
+*  seems plausible the distribution of income might be related to EPI scores.
+
+![Antilla](images/rich.WebP){height=600px}&emsp;vs.&emsp;![Elsewhere](images/poor.jpg){height=600px}<figcaption> Antilla &emsp; &emsp; &emsp;&emsp; &emsp; &emsp; &emsp;&emsp;&emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp;elsewhere in Mumbai.</figcaption>
+
+  -   Are EPI scores correlated with the share of income the top 10% of earners?
+  -   Are EPI scores correlated with the proportion of people living below the \$5.50/day poverty line?
+  -   Or does inequity create a universal incentive to over-exploit? i.e. a "rat race" 
+
+## Rat race?
+
+```{r, warning=FALSE,message=FALSE, fig.height=9,fig.width=16}
+ggplotly(rr) %>%
+  animation_opts(transition = 0)
+```
+
+## Measures of inequity:
+
+```{r, warning=FALSE,fig.height=9,fig.width=16}
+inequality_pairs
+```
+
+## Standard EPI scores:
+
+
+```{r}
+hr <- huxreg(regressions$mod[[1]],regressions$mod[[2]],regressions$mod[[3]],regressions$mod[[4]], omit_coefs=c("(Intercept)","year2008","year2010","year2012","year2014","year2016","year2018","year2020"),
+        statistics = c(N = "nobs", R2 = "r.squared", `Adj R2` = "adj.r.squared"))
+hr$names <- hr$names%>%str_replace_all("_"," ")%>%str_to_title()
+hr
+```
+
+## First take on inequity and environment:
+
+* Controlling for gdp/capita and measures of governance, the gini coefficient of income is negatively correlated with EPI.
+
+* EPI scores negatively correlated with top 10 share and positively correlated with bottom 50 share.
+
+* No strong relationship between EPI scores and the absolute number of people living in poverty.
+
+* Caveat: EPI scores do not account for leakages between countries.  Next up: weighted EPI
+
+## Using trade data to adjust EPIs
+
+*  Rich countries might specialize in the production of enviro-friendly products and trade with poor countries.
+
+* Create a weighted average of a country's EPI score and an import EPI.
+
+* Consider Canada:
+
+```{r}
+kbl(canada)%>% kable_styling(bootstrap_options = c("striped",
+"hover"),full_width = F)
+```
+
+Weight on import EPI is $w_{i}=\frac{M}{GDP-X+M}=$ 
+`r round(canada[3,2]/(canada[1,2]-canada[2,2]+canada[3,2]),2)%>%pull()`
+
+## Canada's import EPI:
+
+```{r}
+ kbl(canada_partners)%>%
+   kable_styling(bootstrap_options = c("striped", "hover"),full_width = F)
+```
+
+* Import EPI is a weighted average of top 5 trading partner's EPI's.
+
+* To calculate the weights we pretend each country *only* trades with these top five trade partners.
+
+* In an ideal world the *entire* environmental impact of producing, consuming and disposing a good or service would be attributed to the country of the consumer... a daunting challenge given the complexity of global supply chains and their numerous environmental impacts. 
+
+## Environmental accounting
+
+* A non-exhaustive list of problems with my "back of the envelope" adjustment. 
+
+    - Not all imports are for consumption, they might be re-exported e.g. Singapore.
+    - Weights based on dollar values do attribute environmental impacts properly.  
+    - your problem...
+
+Some other attempts at environmental accounting
+
+  -   cover a very limited set of countries/industries/pollutants: @muradian2002embodied
+  
+  -   focus exclusively on $CO_2$: @peters2011growth
+  
+
+## Rich countries look a little worse, poor countries look a little better.
+
+
+```{r,warning=FALSE,fig.height=9,fig.width=16}
+epi_vs_wepi
+```
+
+## Import weighted EPI scores
+
+
+```{r}
+hr <- huxreg(regressions$mod[[5]],regressions$mod[[6]],regressions$mod[[7]],regressions$mod[[8]], omit_coefs=c("(Intercept)","year2008","year2010","year2012","year2014","year2016","year2018","year2020"),
+        statistics = c(N = "nobs", R2 = "r.squared", `Adj R2` = "adj.r.squared"))
+hr$names <- hr$names%>%str_replace_all("_"," ")%>%str_to_title()
+hr
+```
+
+
+
+## Added variable plots:
+
+```{r,warning=FALSE,message=FALSE,results = 'hide',fig.height=9,fig.width=16}
+make_av_plots <- function(mdl,var){
+  var=str_sub(var,start=2)
+  avPlots(mdl, var,pch=".",main="")
+}
+
+par(mfrow=c(2,4))
+regressions %>%
+  mutate(plots=walk2(mod,inequality,make_av_plots))
+#dev.off()
+```
+
+## Second look at inequity
+
+*  Results qualitatively similar to results using EPI.
+*  I (hopefully) have been careful not to make causal claims based on this observational data...
+*  i.e. I do not believe that inequality is as good as randomly assigned (conditional on the control variables).
+*  What to do?
+
+## Not much variation in inequality over time.
+
+```{r,warning=FALSE,fig.height=8,fig.width=12}
+gini_plot
+```
+
+
+*  Retreat to the lab: redistribution of income in a common pool resource game similar to @budescu1992simultaneous.
+
+## What the subjects saw: (page 1)
+
+*   Consider a lake where <span class="math inline">\(n \approx 3\)</span> people can catch fish.
+*   In this experiment you will play 20 independent rounds of the same one shot game.
+*   Each round you are put into a new group of <span class="math inline">\(\approx 3\)</span> people.  
+*   In each round your task is to choose how effort to put into fishing <span class="math inline">\(e_i\)</span>.
+*   <em>If</em> the stock of fish <span class="math inline">\(f\)</span> exceeds the total effort $f>e_1+e_2+e_3$ then every unit of effort results in one fish caught.
+*   However, the stock of fish is unknown: <span class="math inline">\(f\)</span> equally likely to be any real number between <span class="math inline">\(0\)</span> and <span class="math inline">\(20n\)</span>: <span class="math inline">\(f∼U[0,20n]\)</span>
+*   If the stock of fish is lower than the total effort <span class="math inline">\(f \leq e_1+e_2+e_3\)</span> the resource is destroyed: all players catch zero fish.
+*   The tradeoff: more effort more fish (if there are enough fish) vs. more effort lower probability there are enough fish.
+*   For example, suppose that the sum of all the individual effort choices is <span class="math inline">\(e_1+e_2+e_3=45\)</span>: what is the probability there is enough fish?
+
+<img width="30%" src="images/fish.png">
+
+*   If the total effort is 45, the probability there is enough fish is .25.  
+
+
+*   The expected profit function for player 1 is:  
+
+<p>$E[\pi_1]=\left[\alpha e_1+\frac{1-\alpha}{3}(e_1+e_2+e_3)\right]\left(\frac{60-e_1-e_2-e_3}{60}\right)-\frac{e_1}{3}$</p>
+
+*   Inside the first [square] brackets is the amount of fish you receive if there are enough fish.  
+*   Inside the second (round) brackets is the probability there are enough fish.  
+*   The last term is the cost of effort.  
+
+
+<h3>The treatments:</h3>
+
+*   There are going to be 3 treatments that vary by the parameter <span class="math inline">\(\alpha\)</span>.  
+*    You will be told the value of <span class="math inline">\(\alpha\)</span> for your treatment once you start the experiment.  
+
+## Summary of last round: (Round 2):
+
+<h2> Fish: 12.615173826925</h2><h2> Total effort: 16</h2>Because the total effort is larger than the stock of fish the resource is destroyed.<table class='t1' ><tr><th>effort</th><th>Profit</th></tr><tr><td>2</td><td>-0.67</td></tr><tr><td>5</td><td>-1.67</td></tr><tr><td>9</td><td>-3</td></tr></table>
+
+<h2>In your treatment $\alpha=.5$</h2>
+<p>So in your treatment the expected profit function for player 1 is:</p>
+
+<p>$E[\pi_1]= \left(\frac{e_1}{2}+\frac{1}{6}(e_1+e_2+e_3)\right) \left(\frac{60-e_1-e_2-e_3}{60}\right)-\frac{e_1}{3}$
+
+
+How much effort do you want to put into fishing in round 3? <input type="number" name="choice" step="1" placeholder="effort" min="0" max="30" />
+
+## The treatments:
+
+* Communism ($\alpha=0$): Prediction: free riding. 
+* Universal Basic Income ($\alpha=\frac12$): Prediction: joint payoff maximizing effort.
+* laissez-faire ($\alpha=1$) Prediction: tragedy of the commons.
+
+
+```{r}
+my_df <- tibble(`$\\alpha$`=c("0","$\\frac12$","1"), 
+                `$e^{\\star}$ (Nash Equilibrium)`=c("0","$\\frac{20}{3}$","10"), 
+                `$e^{\\star\\star}$(Joint payoff maximizing)`=c("$\\frac{20}{3}$","$\\frac{20}{3}$","$\\frac{20}{3}$"))
+kbl(my_df,escape=FALSE) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"),full_width = F)
+```
+
+## References
