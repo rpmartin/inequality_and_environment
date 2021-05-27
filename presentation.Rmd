@@ -3,8 +3,7 @@ title: "Inequity and the Environment"
 author: "Richard Martin"
 date: "07/05/2021"
 output:
-  slidy_presentation:
-    keep_md: true
+  slidy_presentation
 bibliography: references.bib
 csl: apa.csl
 css: style.css
@@ -60,14 +59,14 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ## How the sausage is made:
 
-```{r, warning=FALSE,fig.height=9,fig.width=16}
+```{r, warning=FALSE, fig.height=9, fig.width=16}
 yearly_indicator_diff
 ```
 
 
 ## Confounds: wealth and governance.
 
-```{r, warning=FALSE,fig.height=9,fig.width=16}
+```{r, warning=FALSE, fig.height=9, fig.width=16}
 controls_pairs
 ```
 
@@ -83,24 +82,28 @@ controls_pairs
 
 ## Rat race?
 
-```{r, warning=FALSE,message=FALSE, fig.height=9,fig.width=16}
+```{r, warning=FALSE,message=FALSE, fig.height=9, fig.width=16}
 ggplotly(rr) %>%
   animation_opts(transition = 0)
 ```
 
 ## Measures of inequity:
 
-```{r, warning=FALSE,fig.height=9,fig.width=16}
+```{r, warning=FALSE, fig.height=9, fig.width=16}
 inequality_pairs
 ```
 
-## Standard EPI scores:
+## EPI ~ year + controls + inequality
 
 
 ```{r}
-hr <- huxreg(regressions$mod[[1]],regressions$mod[[2]],regressions$mod[[3]],regressions$mod[[4]], omit_coefs=c("(Intercept)","year2008","year2010","year2012","year2014","year2016","year2018","year2020"),
-        statistics = c(N = "nobs", R2 = "r.squared", `Adj R2` = "adj.r.squared"))
-hr$names <- hr$names%>%str_replace_all("_"," ")%>%str_to_title()
+hr <- huxreg(regressions$mod[[1]], regressions$mod[[2]], regressions$mod[[3]], regressions$mod[[4]],
+#hr <- huxreg(regressions$mod[[1]],             
+             omit_coefs=c("(Intercept)", "year2008", "year2010", "year2012", "year2014", "year2016", "year2018", "year2020"),
+             statistics = c(N = "nobs", R2 = "r.squared", `Adj R2` = "adj.r.squared"))
+hr$names <- hr$names%>%
+  str_replace_all("_", " ")%>%
+  str_to_title()
 hr
 ```
 
@@ -123,8 +126,8 @@ hr
 * Consider Canada:
 
 ```{r}
-kbl(canada)%>% kable_styling(bootstrap_options = c("striped",
-"hover"),full_width = F)
+kbl(canada)%>% 
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = F)
 ```
 
 Weight on import EPI is $w_{i}=\frac{M}{GDP-X+M}=$ 
@@ -134,7 +137,7 @@ Weight on import EPI is $w_{i}=\frac{M}{GDP-X+M}=$
 
 ```{r}
  kbl(canada_partners)%>%
-   kable_styling(bootstrap_options = c("striped", "hover"),full_width = F)
+   kable_styling(bootstrap_options = c("striped", "hover"), full_width = F)
 ```
 
 * Import EPI is a weighted average of top 5 trading partner's EPI's.
@@ -148,7 +151,9 @@ Weight on import EPI is $w_{i}=\frac{M}{GDP-X+M}=$
 * A non-exhaustive list of problems with my "back of the envelope" adjustment. 
 
     - Not all imports are for consumption, they might be re-exported e.g. Singapore.
-    - Weights based on dollar values do attribute environmental impacts properly.  
+    - The environmental impact of goods produced for export might differ from goods produced for domestic consumption.
+    - Weights based on GDP,X,M (dollar values) are not appropriate for environmental impacts.
+    - Even if weights based on dollar values were appropriate, I am only using top 5 trading partners.
     - your problem...
 
 Some other attempts at environmental accounting
@@ -161,17 +166,21 @@ Some other attempts at environmental accounting
 ## Rich countries look a little worse, poor countries look a little better.
 
 
-```{r,warning=FALSE,fig.height=9,fig.width=16}
+```{r,warning=FALSE, fig.height=7.5, fig.width=7.5}
 epi_vs_wepi
 ```
 
-## Import weighted EPI scores
+## import weighted EPI ~ year + controls + inequality
 
 
 ```{r}
-hr <- huxreg(regressions$mod[[5]],regressions$mod[[6]],regressions$mod[[7]],regressions$mod[[8]], omit_coefs=c("(Intercept)","year2008","year2010","year2012","year2014","year2016","year2018","year2020"),
-        statistics = c(N = "nobs", R2 = "r.squared", `Adj R2` = "adj.r.squared"))
-hr$names <- hr$names%>%str_replace_all("_"," ")%>%str_to_title()
+hr <- huxreg(regressions$mod[[5]],regressions$mod[[6]],regressions$mod[[7]],regressions$mod[[8]], 
+#hr <- huxreg(regressions$mod[[1]],             
+             omit_coefs=c("(Intercept)", "year2008", "year2010", "year2012", "year2014", "year2016", "year2018", "year2020"),
+             statistics = c(N = "nobs", R2 = "r.squared", `Adj R2` = "adj.r.squared"))
+hr$names <- hr$names%>%
+  str_replace_all("_"," ")%>%
+  str_to_title()
 hr
 ```
 
@@ -180,14 +189,14 @@ hr
 ## Added variable plots:
 
 ```{r,warning=FALSE,message=FALSE,results = 'hide',fig.height=9,fig.width=16}
-make_av_plots <- function(mdl,var){
-  var=str_sub(var,start=2)
-  avPlots(mdl, var,pch=".",main="")
+make_av_plots <- function(mdl, var){
+  var=str_sub(var, start=2)
+  avPlots(mdl, var, cex=.2, main="")
 }
 
 par(mfrow=c(2,4))
 regressions %>%
-  mutate(plots=walk2(mod,inequality,make_av_plots))
+  mutate(plots=walk2(mod, inequality, make_av_plots))
 #dev.off()
 ```
 
@@ -200,7 +209,7 @@ regressions %>%
 
 ## Not much variation in inequality over time.
 
-```{r,warning=FALSE,fig.height=8,fig.width=12}
+```{r,warning=FALSE, fig.height=8, fig.width=12}
 gini_plot
 ```
 
@@ -258,10 +267,10 @@ How much effort do you want to put into fishing in round 3? <input type="number"
 
 
 ```{r}
-my_df <- tibble(`$\\alpha$`=c("0","$\\frac12$","1"), 
-                `$e^{\\star}$ (Nash Equilibrium)`=c("0","$\\frac{20}{3}$","10"), 
-                `$e^{\\star\\star}$(Joint payoff maximizing)`=c("$\\frac{20}{3}$","$\\frac{20}{3}$","$\\frac{20}{3}$"))
-kbl(my_df,escape=FALSE) %>%
+my_df <- tibble(`$\\alpha$`=c("0", "$\\frac12$", "1"), 
+                `$e^{\\star}$ (Nash Equilibrium)`=c("0", "$\\frac{20}{3}$", "10"), 
+                `$e^{\\star\\star}$(Joint payoff maximizing)`=c("$\\frac{20}{3}$", "$\\frac{20}{3}$", "$\\frac{20}{3}$"))
+kbl(my_df, escape=FALSE) %>%
   kable_styling(bootstrap_options = c("striped", "hover"),full_width = F)
 ```
 
