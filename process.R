@@ -1,5 +1,5 @@
 # making a "copy" of a data.table (new_table <- old_table) and setting keys on new_table
-# resets keys on old_table. To get an actual copy of data.table use new_table <- copy(old_table)
+# resets keys on old_table. To get an *actual* copy of data.table use new_table <- copy(old_table)
 
 library(tidyverse)
 library(janitor)
@@ -7,7 +7,8 @@ library(readxl)
 library(magrittr) # for %<>% operator in function get_one_sheet 
 library(data.table)
 library(broom)
-
+library(here)
+here::i_am("process.R")
 # data sources----
 
 #EPI: https://sedac.ciesin.columbia.edu/data/collection/epi/sets/browse
@@ -20,7 +21,8 @@ library(broom)
 
 # functions ----
 
-get_one_sheet <- function(pth, sht, skp){#epi data in multi-sheet excel files
+get_one_sheet <- function(fl, sht, skp){#epi data in multi-sheet excel files
+  pth <- here("raw_data","epi",fl)
   mydf <- read_excel(path=pth, sheet=sht, skip=skp)%>%
      clean_names()%>%
      select(contains("iso"),
@@ -87,24 +89,23 @@ tidy_indicator <- function(df){# tidy the indicator_series dataframes
 
 # data processing ----
 
-epi_files <- tibble(paths=paste0("raw_data/epi/",
-                                 list.files(path="raw_data/epi", pattern=".xls*")),
+epi_files <- tibble(file=list.files(here("raw_data","epi"), pattern=".xls*"),
                     sheet=c(3, 2, 4, 4, 3, 3, 4, 5),
                     skip=c(0, 0, 1, 0, 0, 0, 0, 0)) #info for reading epi excel files.
 
 # epi data ----
 
 epi_data <- epi_files%>%
-  mutate(data=pmap(list(pth=paths, sht=sheet, skp=skip), get_one_sheet))%>%
+  mutate(data=pmap(list(fl=file, sht=sheet, skp=skip), get_one_sheet))%>%
   select(data)%>%
   unnest(cols=data)%>%
-  mutate(year=as.numeric(year))%>% #note that year comes from file name (not in sheet)
+  mutate(year=as.numeric(year))%>% #year comes from file name (not in sheet)
   as.data.table()%>%
   setkeyv(c("iso", "year"))
 
 # trade data ----
 
-wits <- read_csv("raw_data/wits.csv")%>% #mapping from country name to iso for trade data.
+wits <- read_csv(here("raw_data","wits.csv"))%>% #mapping country name <=> iso for trade data.
   clean_names()%>%
   select(country_name, country_iso3)%>%
   rename(country=country_name,
@@ -112,9 +113,9 @@ wits <- read_csv("raw_data/wits.csv")%>% #mapping from country name to iso for t
   as.data.table()%>%
   setkeyv(c("country"))
 
-trade_files <- list.files("raw_data/trade")%>%# paths to each country's trade data (.csv files)
+trade_files <- list.files(here("raw_data","trade"))%>%# paths to each country's trade data (.csv files)
   as_tibble()%>%
-  mutate(value=paste0("raw_data/trade/", value))
+  mutate(value=paste0(here("raw_data","trade", value)))
 
 trade_nested <- trade_files %>%
   mutate(data=map(value, read_csv),
@@ -179,7 +180,7 @@ canada_partners <- epi_data%>%
   
 # gini data ----  
  
-gini_data <- read_csv("raw_data/swiid/swiid9_0_summary.csv")%>%
+gini_data <- read_csv(here("raw_data","swiid","swiid9_0_summary.csv"))%>%
   select(country, year, gini_disp)%>%
   as.data.table()%>%
   setkeyv(c("country", "year"))
@@ -199,7 +200,7 @@ epi_data <- gini_data[epi_data, roll = "nearest"]%>%
 
 # gdp data---- 
 
-gdp_file <- "raw_data/world_bank/API_NY.GDP.PCAP.CD_DS2_en_csv_v2_2252129.csv" 
+gdp_file <- here("raw_data","world_bank","API_NY.GDP.PCAP.CD_DS2_en_csv_v2_2252129.csv") 
   
 gdp_data <- read_csv(gdp_file, skip=4)%>%
   clean_names()%>%
@@ -220,7 +221,7 @@ epi_data <- gdp_data[epi_data, roll = "nearest"]%>%
 
 # government effectiveness data.
 
-gov_data <- read_csv("raw_data/government_effective/gov_effect.csv")%>%
+gov_data <- read_csv(here("raw_data","government_effective","gov_effect.csv"))%>%
   clean_names()%>%
   select(country_iso3, indicator, subindicator_type, starts_with("x"))%>%
   filter(subindicator_type=="Estimate")%>%
@@ -240,7 +241,7 @@ epi_data <- gov_data[epi_data, roll = "nearest"]%>%
 
 # share of income bottom 50% top 10%.----
 
-tails <-read_delim("raw_data/wid/WID_Data_Metadata/WID_Data_21052021-151421.csv", 
+tails <-read_delim(here("raw_data","wid","WID_Data_Metadata","WID_Data_21052021-151421.csv"), 
                  ";", escape_double = FALSE, col_names = FALSE, 
                  trim_ws = TRUE, skip = 1)%>%
   select(-X2)
@@ -263,7 +264,7 @@ epi_data <- tails[epi_data, roll = "nearest"]%>%
 
 # log(pop) with income less than $5.50 per day----
   
-five_fifty <- read_csv("raw_data/our_world_in_data/distribution-of-population-poverty-thresholds.csv")%>%
+five_fifty <- read_csv(here("raw_data","our_world_in_data","distribution-of-population-poverty-thresholds.csv"))%>%
   clean_names()%>%
   select(-entity, -starts_with("above"), -starts_with("x5_50"))%>%
   pivot_longer(cols=c(-code, -year), names_to="name", values_to="value")%>%
@@ -282,7 +283,7 @@ epi_data <- five_fifty[epi_data, roll = "nearest"]
 
 # file paths and three letter identifiers
 
-series_files <- list.files("raw_data/epi/indicators/2020-epi-indicators-time-series-na/")%>%
+series_files <- list.files(here("raw_data","epi","indicators","2020-epi-indicators-time-series-na"))%>%
   as_tibble()%>%
   filter(! value %in% c("Admin_Country_EEZ.csv",
                         "WWT_sources_reduced.csv",
@@ -290,12 +291,12 @@ series_files <- list.files("raw_data/epi/indicators/2020-epi-indicators-time-ser
                         "MSW_types.csv",
                         "TPA_biomes.csv"))%>%
   mutate(tla=str_sub(value, end=3),
-    path=paste0("raw_data/epi/indicators/2020-epi-indicators-time-series-na/", value))%>%
+    path=here("raw_data","epi","indicators","2020-epi-indicators-time-series-na", value))%>%
   select(-value)
 
 # mapping from tla to short names.
 
-series_names <- read_excel("raw_data/epi/2020-epi.xlsx", sheet=8)%>%
+series_names <- read_excel(here("raw_data","epi","2020-epi.xlsx"), sheet=8)%>%
   clean_names()%>%
   select(variable, abbreviation)%>%
   rename(tla=abbreviation, series=variable)
@@ -314,7 +315,7 @@ indicator_series <- series_files%>%
 
 # data for rat race animation----
 
-working_hours <- read_csv("raw_data/our_world_in_data/annual-working-hours-per-worker.csv")%>%
+working_hours <- read_csv(here("raw_data","our_world_in_data","annual-working-hours-per-worker.csv"))%>%
   clean_names()%>%
   select(-code)%>%
   rename(country=entity, hours=average_annual_working_hours_per_worker)%>%
@@ -341,4 +342,4 @@ rm(list = setdiff(ls(), c("gini_for_plot",
 
 # save objects as binary file.----
 
-save.image(file='RData_files/process.RData')
+save.image(file=here("RData_files","process.RData"))

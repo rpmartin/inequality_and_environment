@@ -1,7 +1,8 @@
 library(tidyverse)
 library(GGally)
 library(plotly)
-
+library(here)
+here::i_am("analysis.R")
 # functions----
 
 formatter <- function(string){
@@ -12,7 +13,7 @@ formatter <- function(string){
 
 # load the processed data----
 
-load("RData_files/process.RData")
+load(here("RData_files","process.RData"))
 
 mydf <- epi_data%>%
   mutate(year=factor(year))
@@ -97,4 +98,4 @@ gini_plot <- ggplotly(gini_plot)
 
 #save all objects----
 
-save.image(file='RData_files/analysis.RData')
+save.image(file=here("RData_files","analysis.RData"))

@@ -10,14 +10,15 @@ css: style.css
 ---
 
 ```{r setup, include=FALSE}
-load("RData_files/analysis.RData")
-#source("analysis.R")
 library(kableExtra)
 library(tidyverse)
 library(huxtable)
 library(car)
 library(GGally)
 library(plotly)
+library(here)
+here::i_am("presentation.Rmd")
+load(here("RData_files","analysis.RData"))
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
