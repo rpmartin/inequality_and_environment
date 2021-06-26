@@ -310,7 +310,7 @@ indicator_series <- series_files%>%
   unnest(cols=data)%>%
   select(-tla, -path)%>%
   group_by(iso, indicator)%>%
-  mutate(diff=c(NA, diff(value)))%>%
+  mutate(change=c(NA, diff(log(1+value))))%>%
   filter(year>2004)
 
 # data for rat race animation----

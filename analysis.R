@@ -71,13 +71,13 @@ regressions <- crossing(dep_vars, controls, inequality)%>%
 
 # 32 indicator's time series----
 
-(yearly_indicator_diff <- ggplot(indicator_series, aes(year, diff, group=iso))+
+(yearly_indicator_diff <- ggplot(indicator_series, aes(year, change, group=iso))+
     theme(text = element_text(size = 8))+
     geom_line(alpha=.05)+
     facet_wrap(vars(series), scales="free_y")+
     labs(title="Some performance indicators constant over time???",
          caption="source: https://sedac.ciesin.columbia.edu/downloads/data/epi/epi-environmental-performance-index-2020/",
-         y="annual change in indicator")+ 
+         y="annual rate of change in indicator")+ 
     theme(axis.text.x = element_text(angle=45)))
 
 # inequality vs. working hours (rat race)----
@@ -93,7 +93,8 @@ regressions <- crossing(dep_vars, controls, inequality)%>%
 gini_plot <- ggplot(gini_for_plot, aes(year, gini_disp, group=country, colour=gini_sd, label=country))+
   scale_color_viridis_c()+
   geom_line(alpha=.5)+
-  labs(y="Gini coefficient for disposable income")
+  labs(y="Gini coefficient for disposable income",
+       colour="Standard Deviation of Gini")
 gini_plot <- ggplotly(gini_plot)
 
 #save all objects----
