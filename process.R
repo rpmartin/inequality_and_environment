@@ -185,13 +185,6 @@ gini_data <- read_csv(here("raw_data","swiid","swiid9_0_summary.csv"))%>%
   as.data.table()%>%
   setkeyv(c("country", "year"))
 
-# gini that overlaps epi ----
-  
-gini_for_plot <- gini_data%>%
-  filter(year>2006)%>%
-  group_by(country)%>%
-  mutate(gini_sd=sd(gini_disp))
- 
 # join gini data to epi, trade data----
  
 epi_data <- gini_data[epi_data, roll = "nearest"]%>%
@@ -208,7 +201,7 @@ gdp_data <- read_csv(gdp_file, skip=4)%>%
   pivot_longer(cols=starts_with("x"), names_to="year", values_to="gdp_per_cap")%>%
   mutate(year=as.numeric(str_sub(year, start=2)))%>%
   filter(!is.na(gdp_per_cap))%>%
-  mutate(log_gdp_per_cap=log10(gdp_per_cap))%>%
+  mutate(log_gdp_per_cap=log(gdp_per_cap))%>%
   rename(iso=country_code)%>% 
   select(-gdp_per_cap)%>%
   as.data.table()%>%
@@ -333,8 +326,7 @@ rat_race <- gdp_data[rat_race,  roll="nearest"]
 
 # only keep needed objects----
 
-rm(list = setdiff(ls(), c("gini_for_plot",
-                          "rat_race",
+rm(list = setdiff(ls(), c("rat_race",
                           "epi_data",
                           "indicator_series",
                           "canada",

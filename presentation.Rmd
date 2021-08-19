@@ -1,5 +1,5 @@
 ---
-title: "Inequity and the Environment"
+title: "Inequality and the Environment"
 author: "Richard Martin"
 date: "07/05/2021"
 output:
@@ -20,6 +20,11 @@ library(here)
 here::i_am("presentation.Rmd")
 load(here("RData_files","analysis.RData"))
 knitr::opts_chunk$set(echo = FALSE)
+def <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(output = function(x, options) {
+  x <- def(x, options)
+  ifelse(!is.null(options$suppress), gsub(pattern = "```.*```", "", x), x)
+})
 ```
 
 ## Environmental problems we write about:
@@ -45,24 +50,76 @@ knitr::opts_chunk$set(echo = FALSE)
 
 * Environmental Performance Index (EPI) is a data-driven summary of the state of sustainability based on 32 performance indicators across 11 issue categories.
 
-![](images/gdp_epi.png){ height=35% }
-<figcaption>source: @epi20</figcaption>
+![source: @epi](images/epi.png){width=16,height=9}
 
-* Strong correlation between EPI scores and GDP/capita. Is it because:
+* EPI scores are available for the years `r sort(unique(epi_data$year))`, but
 
-    - economic prosperity makes it possible for nations to invest in policies and programs that lead to desirable outcomes  OR
-    
-    - economic prosperity allows rich countries to outsource the production of environmentally damaging goods. 
+> Because the underlying methodology and data change between versions of the EPI, it is not appropriate to assemble the scores from each release into a time series (https://epi.yale.edu/faq/epi-faq) 
 
-*  Trade data and standard EPI scores can be used to create a weighted EPI score that crudely addresses these leakages.
+## EPI time series.
 
-    - the relationship between gdp/capita and epi scores still exists using this weighted EPI score.
+```{r, warning=FALSE, fig.height=9, fig.width=16}
+epi_vs_year
+```
 
 ## How the sausage is made:
 
 ```{r, warning=FALSE, fig.height=9, fig.width=16}
 yearly_indicator_diff
 ```
+
+## Econometric theory
+
+> ... is like an exquisitely balanced French recipe, spelling out precisely with how many turns to mix the sauce, how many carats of spice to add, and for how many milliseconds to bake the mixture at exactly 474 degrees of temperature. But when the statistical cook turns to raw materials, he finds that hearts of cactus fruit are unavailable, so he substitutes chunks of cantaloupe; where the recipe calls for vermicelli he uses shredded wheat; and he substitutes green garment dye for curry, ping-pong balls for turtle's eggs and, for Chalifougnac vintage 1883, a can of turpentine (Stefan Valavanis)
+
+![source: ](images/ugly.jpeg){width=4,height=4}
+
+
+## Inequality over time:
+
+```{r,warning=FALSE, fig.height=9, fig.width=16}
+gini_plot
+```
+
+* Most of the variation is between countries, not over time.
+
+## Approach taken:
+
+* Because:
+
+1)    EPI scores seem a little dodgy
+2)    Measures of Inequality are highly stable over time 
+
+* perform cross-sectional OLS on time-averaged data
+* control for confounds
+* use robust standard errors
+* do not put much faith in results
+* run an experiment 
+
+## Log(GDP/Capita) vs. EPI scores
+
+```{r, message=FALSE, fig.height=9, fig.width=16}
+wealth_vs_epi
+```
+<figcaption>data source: GDP/capita (World Bank) and EPI (@epi20)</figcaption>
+
+
+## EPI vs. log(GDP/capita)
+
+```{r, message=FALSE, fig.height=9, fig.width=16}
+kuznet
+```
+<figcaption>data source: GDP/capita (World Bank) and EPI (@epi20)</figcaption>
+
+* Strong positive correlation between EPI scores and log(GDP/capita). Is it because:
+
+    - economic prosperity makes it possible for nations to invest in policies and programs that lead to desirable environmental outcomes  OR
+    
+    - economic prosperity allows rich countries to outsource the production of environmentally damaging goods. 
+
+*  Trade data and standard EPI scores can be used to create a weighted EPI score that crudely addresses these leakages.
+
+    - the relationship between gdp/capita and epi scores still exists using this weighted EPI score.
 
 
 ## Confounds: wealth and governance.
@@ -71,7 +128,7 @@ yearly_indicator_diff
 controls_pairs
 ```
 
-## What I am interested in: inequity
+## What I am interested in: Inequality
 
 *  seems plausible the distribution of income might be related to EPI scores.
 
@@ -79,7 +136,7 @@ controls_pairs
 
   -   Are EPI scores correlated with the share of income the top 10% of earners?
   -   Are EPI scores correlated with the proportion of people living below the \$5.50/day poverty line?
-  -   Or does inequity create a universal incentive to over-exploit? i.e. a "rat race" 
+  -   Or does Inequality create a universal incentive to over-exploit? i.e. a "rat race" 
 
 ## Rat race?
 
@@ -88,32 +145,31 @@ ggplotly(rr) %>%
   animation_opts(transition = 0)
 ```
 
-## Measures of inequity:
+## Measures of Inequality:
 
 ```{r, warning=FALSE, fig.height=9, fig.width=16}
 inequality_pairs
 ```
 
-## EPI ~ year + controls + inequality
+## EPI ~ controls + inequality
 
 
-```{r}
-hr <- huxreg(regressions$mod[[1]], regressions$mod[[2]], regressions$mod[[3]], regressions$mod[[4]],
-#hr <- huxreg(regressions$mod[[1]],             
-             omit_coefs=c("(Intercept)", "year2008", "year2010", "year2012", "year2014", "year2016", "year2018", "year2020"),
-             statistics = c(N = "nobs", R2 = "r.squared", `Adj R2` = "adj.r.squared"))
+```{r, warning=FALSE}
+hr <- huxreg(regressions$rob_mod[[1]], regressions$rob_mod[[2]], regressions$rob_mod[[3]], regressions$rob_mod[[4]],
+             omit_coefs=c("(Intercept)"),
+             statistics = character(0))
 hr$names <- hr$names%>%
   str_replace_all("_", " ")%>%
   str_to_title()
 hr
 ```
 
-## First take on inequity and environment:
+## Cet Par:
 
-* Controlling for gdp/capita and measures of governance, the gini coefficient of income is negatively correlated with EPI.
-
-* EPI scores negatively correlated with top 10 share and positively correlated with bottom 50 share.
-
+* A 10% increase in GDP/capita is associated $\approx$ .4 unit increase in EPI score.
+* A 10% increase in the bottom 50 share of income (from mean of .15) is associated with $\approx$ .6 unit increase in EPI score.
+* A 10% decrease in the top 10 share of income (from mean of .45) is associated with $\approx$ 1 unit increase in EPI score.
+* A 10% decrease in gini coefficient (from mean of 40) is associated with $\approx$ .8 unit increase in EPI score. 
 * No strong relationship between EPI scores and the absolute number of people living in poverty.
 
 * Caveat: EPI scores do not account for leakages between countries.  Next up: weighted EPI
@@ -171,14 +227,13 @@ Some other attempts at environmental accounting
 epi_vs_wepi
 ```
 
-## import weighted EPI ~ year + controls + inequality
+## import weighted EPI ~ controls + inequality
 
 
-```{r}
-hr <- huxreg(regressions$mod[[5]],regressions$mod[[6]],regressions$mod[[7]],regressions$mod[[8]], 
-#hr <- huxreg(regressions$mod[[1]],             
-             omit_coefs=c("(Intercept)", "year2008", "year2010", "year2012", "year2014", "year2016", "year2018", "year2020"),
-             statistics = c(N = "nobs", R2 = "r.squared", `Adj R2` = "adj.r.squared"))
+```{r, warning=FALSE}
+hr <- huxreg(regressions$rob_mod[[5]],regressions$rob_mod[[6]],regressions$rob_mod[[7]],regressions$rob_mod[[8]], 
+             omit_coefs=c("(Intercept)"),
+             statistics = character(0))
 hr$names <- hr$names%>%
   str_replace_all("_"," ")%>%
   str_to_title()
@@ -192,7 +247,7 @@ hr
 ```{r,warning=FALSE,message=FALSE,results = 'hide',fig.height=9,fig.width=16}
 make_av_plots <- function(mdl, var){
   var=str_sub(var, start=2)
-  avPlots(mdl, var, cex=.2, main="")
+  avPlots(mdl, var, cex=.5, main="")
 }
 
 par(mfrow=c(2,4))
@@ -201,20 +256,12 @@ regressions %>%
 #dev.off()
 ```
 
-## Second look at inequity
+## Second look at Inequality
 
 *  Results qualitatively similar to results using EPI.
 *  I (hopefully) have been careful not to make causal claims based on this observational data...
 *  i.e. I do not believe that inequality is as good as randomly assigned (conditional on the control variables).
 *  What to do?
-
-## Not much variation in inequality over time.
-
-```{r,warning=FALSE, fig.height=8, fig.width=12}
-gini_plot
-```
-
-
 *  Retreat to the lab: redistribution of income in a common pool resource game similar to @budescu1992simultaneous.
 
 ## What the subjects saw: (page 1)
